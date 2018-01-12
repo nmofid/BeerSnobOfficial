@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BeerSnob</string>
+    <string name="fridge_status">Fridge Status</string>
+    <string name="fridge_contents">Fridge Camera</string>
+    <string name="restock_beer">Restock Beer</string>
+    <string name="data_analytics">Data Analytics</string>
+</resources>
