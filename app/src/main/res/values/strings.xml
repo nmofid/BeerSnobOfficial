@@ -4,4 +4,6 @@
     <string name="fridge_contents">Fridge Camera</string>
     <string name="restock_beer">Restock Beer</string>
     <string name="data_analytics">Data Analytics</string>
+    <string name="temp">Temperature</string>
+    <string name="humidity">Humidity</string>
 </resources>

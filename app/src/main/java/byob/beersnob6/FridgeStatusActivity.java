@@ -1,6 +1,7 @@
 package byob.beersnob6;
 
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 
 /**
