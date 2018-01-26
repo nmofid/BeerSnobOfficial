@@ -10,28 +10,33 @@
     tools:context="byob.beersnob6.DataAnalyticsActivity"
     android:background="@color/blue">
 
-    <Button
-        android:id="@+id/button"
-        style="@style/Widget.AppCompat.Button.Colored"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
-        android:layout_marginEnd="143dp"
-        android:layout_marginRight="143dp"
-        android:text="@string/temp" />
-
+    <!--style="@style/Widget.AppCompat.Button.Colored"-->
     <Button
         android:id="@+id/button5"
-        style="@style/Widget.AppCompat.Button.Colored"
-        android:layout_width="wrap_content"
+        android:background="@color/white"
+        android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:layout_marginEnd="34dp"
-        android:layout_marginRight="34dp"
-        android:backgroundTint="@android:color/holo_purple"
-        android:text="@string/humidity" />
+        android:layout_marginBottom="0dp"
+        android:layout_marginEnd="150dp"
+        android:layout_marginRight="220dp"
+        android:text="@string/temp" />
+
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0.5dp"
+        android:layout_weight="0.3" >
+    </Space>
+
+    <com.jjoe64.graphview.GraphView
+        android:layout_width="match_parent"
+        android:layout_height="215dip"
+        android:id="@+id/graph" />
+
+   <!--Commenting out temperature button for now-->
+
+
 </RelativeLayout>
