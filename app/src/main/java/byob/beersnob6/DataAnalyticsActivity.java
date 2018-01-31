@@ -77,7 +77,7 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                 graph.removeAllSeries();
                 //https://github.com/kosalgeek/generic_asynctask <--use this for the AsyncRespone not built in Android Studio Library
                 PostResponseAsyncTask tempqueryTask = new PostResponseAsyncTask(DataAnalyticsActivity.this, DataAnalyticsActivity.this);
-                tempqueryTask.execute("http://10.0.0.44/tempquery.php");
+                tempqueryTask.execute("http://169.234.2.226/tempquery.php");
 
             }
 
@@ -133,8 +133,14 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
 
             for(int i = 0; i < datelist.size(); i++){
                 //create an array of Data Points with dates on the x and temp on the y
-                 dataPoints.add(new DataPoint(datelist.get(i), Double.parseDouble(templist.get(i))));
-                  series.appendData(dataPoints.get(i), true, 220);
+                Log.d("ProcessFinish", "datelist = "+datelist.get(i));
+                try{
+                    dataPoints.add(new DataPoint(datelist.get(i), Double.parseDouble(templist.get(i))));
+                    series.appendData(dataPoints.get(i), true, 220);
+                }
+                catch(Exception ex) {
+                    Log.d("ProcessFinish", "ERROR : " + ex.toString());
+                }
             }
 
             System.out.println(templist);
