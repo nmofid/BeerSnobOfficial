@@ -1,0 +1,43 @@
+{
+  "UserAgent": "MobileHub/1.0",
+  "Version": "1.0",
+  "CredentialsProvider": {
+    "CognitoIdentity": {
+      "Default": {
+        "PoolId": "us-east-1:81b1fec3-bed6-45f2-bb6e-ced608ad1c31",
+        "Region": "us-east-1"
+      }
+    }
+  },
+  "IdentityManager": {
+    "Default": {}
+  },
+  "S3TransferUtility": {
+    "Default": {
+      "Bucket": "iotminifridge-userfiles-mobilehub-456530050",
+      "Region": "us-east-1"
+    }
+  },
+  "Cognito": {
+    "Default": {
+      "Region": "us-east-1"
+    }
+  },
+  "PinpointAnalytics": {
+    "Default": {
+      "AppId": "ea38e1a664a048a0a03b959e0d26c9ed",
+      "Region": "us-east-1"
+    }
+  },
+  "PinpointTargeting": {
+    "Default": {
+      "Region": "us-east-1"
+    }
+  },
+  "UserFileManager": {
+    "Default": {
+      "Bucket": "iotminifridge-userfiles-mobilehub-456530050",
+      "Region": "us-east-1"
+    }
+  }
+}

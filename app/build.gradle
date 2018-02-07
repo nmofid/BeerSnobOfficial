@@ -32,4 +32,7 @@ dependencies {
     annotationProcessor 'android.arch.persistence.room:compiler:1.0.0'
     compile files('libs/GenAsync.jar')
     compile 'com.jjoe64:graphview:4.2.1'
+    compile ('com.amazonaws:aws-android-sdk-mobile-client:2.6.7@aar') { transitive = true; }
+    compile 'com.amazonaws:aws-android-sdk-s3:2.6.+'
+    compile 'com.amazonaws:aws-android-sdk-cognito:2.6.+'
 }

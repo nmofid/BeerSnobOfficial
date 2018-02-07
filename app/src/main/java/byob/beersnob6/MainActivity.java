@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import com.amazonaws.mobile.client.AWSMobileClient;
 
 public class MainActivity extends AppCompatActivity {
     android.widget.Button FridgeStatus,FridgeCamera,RestockBeer,DataAnalytics ;
@@ -15,6 +16,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        AWSMobileClient.getInstance().initialize(this).execute();
+
         setContentView(R.layout.activity_main);
 
         FridgeStatus = (android.widget.Button)findViewById(R.id.button1);

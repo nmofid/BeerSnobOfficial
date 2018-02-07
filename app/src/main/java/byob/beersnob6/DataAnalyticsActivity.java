@@ -77,7 +77,7 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                 graph.removeAllSeries();
                 //https://github.com/kosalgeek/generic_asynctask <--use this for the AsyncRespone not built in Android Studio Library
                 PostResponseAsyncTask tempqueryTask = new PostResponseAsyncTask(DataAnalyticsActivity.this, DataAnalyticsActivity.this);
-                tempqueryTask.execute("http://169.234.2.226/tempquery.php");
+                tempqueryTask.execute("http://192.168.1.117/tempquery.php");
 
             }
 
