@@ -3,7 +3,6 @@ package byob.beersnob6;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -25,14 +24,16 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 
-import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Calendar;
 import java.util.Date;
 
-/**
- * Created by Nikka Mofid on 1/11/2018.
+/*
+ *  Activity to show the last image taken of the fridge contents.
+ *
+ *  Uses Amazon AWS CLI Android SDK to fetch a pre-signed URL of the latest fridge contents.
+ *  This URL is then used to display the fridge contents image.
  */
 
 public class FridgeCameraActivity extends Activity {
@@ -60,6 +61,9 @@ public class FridgeCameraActivity extends Activity {
         else Log.d("ProcessFinish", "URL was NULL!");
     }
 
+    /*
+     * Performs the network tasks necessary on a separate thread from the UI thread.
+     */
     class performNetworkTask extends AsyncTask{
 
         @Override
@@ -83,6 +87,10 @@ public class FridgeCameraActivity extends Activity {
         }
     }
 
+    /*
+     *  Function to get pre-signed URL of fridge content image in Amazon S3 using Amazon AWS CLI.
+     *  Also sets the image's bitmap using the pre-signed URL.
+     */
     public String getS3ImageURLBitmap() {
         Calendar cal = Calendar.getInstance();
         cal.setTime(new Date());
@@ -130,13 +138,17 @@ public class FridgeCameraActivity extends Activity {
         return null;
     }
 
+    /*
+     * myView Class - Takes Bitmap of the fridge content image and draws it to the screen.
+     *                If there was an error with the URL, draws the error image.
+     */
     private class myView extends View {
         private String url;
 
         public myView(Context c, String myUrl){
-
             super(c);
             url = myUrl;
+
         }
 
         @Override
@@ -144,8 +156,8 @@ public class FridgeCameraActivity extends Activity {
             Bitmap b;
             DisplayMetrics displayMetrics = new DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            int height = displayMetrics.heightPixels;
-            int width = displayMetrics.widthPixels;
+            int height = (int) ((double) displayMetrics.heightPixels * 0.75);
+            int width = (int) ((double) displayMetrics.widthPixels * 0.75);
             try {
                 Bitmap tryout = imageBitmap;
                 b = Bitmap.createScaledBitmap(tryout, width, height, false);
@@ -154,7 +166,9 @@ public class FridgeCameraActivity extends Activity {
                 Bitmap tryout = BitmapFactory.decodeResource(getResources(), R.drawable.fridgecamfetcherror);
                 b = Bitmap.createScaledBitmap(tryout, width, height, false);
             }
-            canvas.drawBitmap(b, 0, 100, null);
+            int startHeight = (int) ((double) displayMetrics.heightPixels * 0.25 * 0.25);
+            int startWidth = (int) ((double) displayMetrics.widthPixels * 0.5 * 0.25);
+            canvas.drawBitmap(b, startWidth, startHeight, null);
         }
 
     }

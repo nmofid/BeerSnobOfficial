@@ -5,5 +5,5 @@
     <string name="restock_beer">Restock Beer</string>
     <string name="data_analytics">Data Analytics</string>
     <string name="temp">Temperature</string>
-    <string name="humidity">Humidity</string>
+    <string name="retake_pic">Retake Picture</string>
 </resources>
