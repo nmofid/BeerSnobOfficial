@@ -14,21 +14,11 @@ import java.util.Set;
 @DynamoDBTable(tableName = "iotminifridge-mobilehub-456530050-Temperature")
 
 public class TemperatureDO {
-    private String _userId;
     private String _time;
     private String _temp;
 
-    @DynamoDBHashKey(attributeName = "userId")
-    @DynamoDBAttribute(attributeName = "userId")
-    public String getUserId() {
-        return _userId;
-    }
-
-    public void setUserId(final String _userId) {
-        this._userId = _userId;
-    }
-    @DynamoDBRangeKey(attributeName = "time")
-    @DynamoDBAttribute(attributeName = "time")
+    @DynamoDBHashKey(attributeName = "Time")
+    @DynamoDBAttribute(attributeName = "Time")
     public String getTime() {
         return _time;
     }
@@ -36,7 +26,8 @@ public class TemperatureDO {
     public void setTime(final String _time) {
         this._time = _time;
     }
-    @DynamoDBAttribute(attributeName = "temp")
+    @DynamoDBRangeKey(attributeName = "Temp")
+    @DynamoDBAttribute(attributeName = "Temp")
     public String getTemp() {
         return _temp;
     }
