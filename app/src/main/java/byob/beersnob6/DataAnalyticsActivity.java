@@ -9,6 +9,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBQueryExpression;
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.PaginatedList;
+import com.amazonaws.models.nosql.TempDO;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.google.gson.Gson;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
 import com.jjoe64.graphview.series.DataPoint;
@@ -25,9 +32,17 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TimeZone;
+
+import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBMapper;
+import com.amazonaws.mobile.client.AWSMobileClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.mobile.auth.core.IdentityManager;
 
 /**
- * Created by Nikka Mofid on 1/11/2018.
+ * Activity to show temperature graphed over time.
+ *
+ * Uses temperature data fetched from Amazon Dynamo DB to create the graph.
  */
 
 public class DataAnalyticsActivity extends AppCompatActivity implements AsyncResponse{
@@ -37,11 +52,18 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
     ArrayList<DataPoint> dataPoints;
     GraphView graph;
     LineGraphSeries<DataPoint> series, series_test;
+    DynamoDBMapper dynamoDBMapper;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.data_analytics);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+        AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(AWSMobileClient.getInstance().getCredentialsProvider());
+        this.dynamoDBMapper = DynamoDBMapper.builder()
+                .dynamoDBClient(dynamoDBClient)
+                .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
+                .build();
 
 
         graph = (GraphView) findViewById(R.id.graph);
@@ -60,6 +82,8 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
         // is not necessary
         //graph.getGridLabelRenderer().setHumanRounding(false);
 
+        //readSQLData();
+
 
 
         android.widget.Button Temp;
@@ -76,8 +100,9 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                 Log.d("Onclick","Im Alive!");
                 graph.removeAllSeries();
                 //https://github.com/kosalgeek/generic_asynctask <--use this for the AsyncRespone not built in Android Studio Library
-                PostResponseAsyncTask tempqueryTask = new PostResponseAsyncTask(DataAnalyticsActivity.this, DataAnalyticsActivity.this);
-                tempqueryTask.execute("http://192.168.1.117/tempquery.php");
+                //PostResponseAsyncTask tempqueryTask = new PostResponseAsyncTask(DataAnalyticsActivity.this, DataAnalyticsActivity.this);
+                //tempqueryTask.execute("http://192.168.1.117/tempquery.php");
+                readSQLData();
 
             }
 
@@ -147,5 +172,86 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
             System.out.println(datelist);
             graph.addSeries(series);
 
+    }
+
+    public void readSQLData(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                TempDO myTemp = new TempDO();
+                myTemp.setUserId("0");
+                myTemp.setTemp("temp");
+                myTemp.setTime("time");
+
+                /* Get the current date */
+                Calendar cal = Calendar.getInstance(/*TimeZone.getTimeZone("UTC")*/); //Pi records date log in UTC
+                int year = cal.get(Calendar.YEAR);
+                int month = cal.get(Calendar.MONTH) + 1; // because returns int 0 to 11
+                int day = cal.get(Calendar.DAY_OF_MONTH);
+                String currentDate = String.format("%4d-%02d-%02d", year, month, day);
+                Log.d("ProcessFinish", currentDate);
+
+                /* Set up query to dynamoDB, output all temperatures from day of query */
+                Condition rangedKeyCondition = new Condition()
+                        .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
+                        .withAttributeValueList(new AttributeValue().withS(currentDate));
+
+                DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
+                        .withRangeKeyCondition("time",rangedKeyCondition)
+                        .withConsistentRead(false)
+                        .withHashKeyValues(myTemp);
+
+                PaginatedList<TempDO> result = dynamoDBMapper.query(TempDO.class, queryExpression);
+
+                /* Parse output from query */
+                Gson gson = new Gson();
+                StringBuilder stringBuilder = new StringBuilder();
+
+                SimpleDateFormat formatter;
+                TempDO tempItem;
+                String date;
+                templist = new ArrayList<String>();
+                datelist = new ArrayList<Date>();
+                dataPoints = new ArrayList<DataPoint>();
+
+                /* Fill temperature and date lists */
+                for(int i = 0; i < result.size(); i++){
+                    tempItem = result.get(i);
+                    String jsonFormOfItem = gson.toJson(tempItem);
+                    stringBuilder.append(jsonFormOfItem + "\n\n");
+
+                    formatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                    date = tempItem.getTime();
+                    date = date.replaceAll(" ", "T");
+                    date = date.substring(0,date.length() - 3);
+                    date = date.concat("-07:00");
+
+                    try {
+                        datelist.add(formatter.parse(date));
+                        templist.add(tempItem.getTemp());
+                    }
+                    catch(Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+
+                    Log.d("ProcessFinish", jsonFormOfItem);
+                }
+
+                /* Insert data points into graph */
+                for(int i = 0; i < datelist.size(); i++){
+                    try{
+                        dataPoints.add(new DataPoint(datelist.get(i), Double.parseDouble(templist.get(i))));
+                        series.appendData(dataPoints.get(i), true, 220);
+                    }
+                    catch(Exception ex) {
+                        Log.d("ProcessFinish", "ERROR : " + ex.toString());
+                    }
+                }
+
+                graph.addSeries(series);
+
+
+            }
+        }).start();
     }
 }
