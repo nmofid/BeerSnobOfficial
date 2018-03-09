@@ -1,9 +1,15 @@
 package byob.beersnob6;
 
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.AsyncTask;
+import android.support.v7.app.AppCompatActivity;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.content.Context;
@@ -36,7 +42,7 @@ import java.util.Date;
  *  This URL is then used to display the fridge contents image.
  */
 
-public class FridgeCameraActivity extends Activity {
+public class FridgeCameraActivity extends AppCompatActivity {
     private Bitmap imageBitmap;
     private String imageURL;
     private String bucketName, fileName;
@@ -44,6 +50,12 @@ public class FridgeCameraActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.fridgecamera);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
+        String title = "Beer Snob Fridge Contents";
+        SpannableString s = new SpannableString(title);
+        s.setSpan(new ForegroundColorSpan(Color.BLACK), 0, title.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getSupportActionBar().setTitle(s);
 
         bucketName = "iotminifridge-userfiles-mobilehub-456530050";
         fileName = "public/image.jpg";
@@ -156,7 +168,8 @@ public class FridgeCameraActivity extends Activity {
             Bitmap b;
             DisplayMetrics displayMetrics = new DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            int height = (int) ((double) displayMetrics.heightPixels - 0.05 * displayMetrics.heightPixels);
+            int actionBarHeight = getSupportActionBar().getHeight();
+            int height = (int) ((double) displayMetrics.heightPixels - 0.05 * displayMetrics.heightPixels - actionBarHeight);
             int width = (int) ((double) displayMetrics.widthPixels - 0.02 * displayMetrics.widthPixels);
             try {
                 Bitmap tryout = imageBitmap;

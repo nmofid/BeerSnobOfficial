@@ -7,4 +7,5 @@
     <string name="temp">Temperature</string>
     <string name="bottle_count">Bottle Count</string>
     <string name="retake_pic">Retake Picture</string>
+    <string name="refresh">Refresh</string>
 </resources>

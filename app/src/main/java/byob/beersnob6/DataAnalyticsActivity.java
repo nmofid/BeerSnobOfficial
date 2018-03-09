@@ -259,7 +259,7 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                     date = tempItem.getTime();
                     date = date.replaceAll(" ", "T");
                     date = date.substring(0,date.length() - 3);
-                    date = date.concat("-07:00");
+                    date = date.concat("-08:00"); //Time Zone PST
 
                     try {
                         datelist.add(formatter.parse(date));

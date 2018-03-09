@@ -36,7 +36,7 @@ public class BottleCountDO {
     public void setTime(final String _time) {
         this._time = _time;
     }
-    @DynamoDBAttribute(attributeName = "count")
+    @DynamoDBAttribute(attributeName = "Count")
     public String getCount() {
         return _count;
     }

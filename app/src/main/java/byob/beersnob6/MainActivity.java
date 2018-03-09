@@ -1,6 +1,7 @@
 package byob.beersnob6;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.v7.app.AppCompatActivity;
@@ -10,6 +11,12 @@ import android.view.View;
 import android.widget.ImageView;
 import com.amazonaws.mobile.client.AWSMobileClient;
 
+/*
+ * Main Activity for the Beer Snob Application
+ *
+ * Four buttons to go to different pages with data on the fridge status and contents.
+ */
+
 public class MainActivity extends AppCompatActivity {
     android.widget.Button FridgeStatus,FridgeCamera,RestockBeer,DataAnalytics ;
 
@@ -17,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getSupportActionBar().hide();
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         AWSMobileClient.getInstance().initialize(this).execute();
 

@@ -26,10 +26,22 @@
     </Space>
 
     <TextView
+        android:id="@+id/report"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@+id/imageView"
+        android:layout_toEndOf="@+id/space2"
         android:layout_toRightOf="@+id/space2"
-        android:layout_toEndOf="@+id/space2" />
+        android:textSize="32sp"
+        android:textStyle="bold"/>
+
+    <Button
+        android:id="@+id/button7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:background="@color/white"
+        android:text="@string/refresh" />
 
 </RelativeLayout>
