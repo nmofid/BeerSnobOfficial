@@ -46,7 +46,7 @@ public class FridgeCameraActivity extends Activity {
         setContentView(R.layout.fridgecamera);
 
         bucketName = "iotminifridge-userfiles-mobilehub-456530050";
-        fileName = "public/SmallCamDoor.jpg";
+        fileName = "public/image.jpg";
 
         performNetworkTask networkTask = new performNetworkTask();
         try {
@@ -156,8 +156,8 @@ public class FridgeCameraActivity extends Activity {
             Bitmap b;
             DisplayMetrics displayMetrics = new DisplayMetrics();
             getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-            int height = (int) ((double) displayMetrics.heightPixels * 0.75);
-            int width = (int) ((double) displayMetrics.widthPixels * 0.75);
+            int height = (int) ((double) displayMetrics.heightPixels - 0.05 * displayMetrics.heightPixels);
+            int width = (int) ((double) displayMetrics.widthPixels - 0.02 * displayMetrics.widthPixels);
             try {
                 Bitmap tryout = imageBitmap;
                 b = Bitmap.createScaledBitmap(tryout, width, height, false);
@@ -166,8 +166,8 @@ public class FridgeCameraActivity extends Activity {
                 Bitmap tryout = BitmapFactory.decodeResource(getResources(), R.drawable.fridgecamfetcherror);
                 b = Bitmap.createScaledBitmap(tryout, width, height, false);
             }
-            int startHeight = (int) ((double) displayMetrics.heightPixels * 0.25 * 0.25);
-            int startWidth = (int) ((double) displayMetrics.widthPixels * 0.5 * 0.25);
+            int startHeight = (int) ((double) displayMetrics.heightPixels * 0.01);
+            int startWidth = (int) ((double) displayMetrics.widthPixels * 0.01);
             canvas.drawBitmap(b, startWidth, startHeight, null);
         }
 

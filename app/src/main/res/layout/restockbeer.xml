@@ -8,6 +8,6 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="byob.beersnob6.RestockBeerActivity"
-    android:background="@color/blue">
+    android:background="@color/green">
 
 </RelativeLayout>

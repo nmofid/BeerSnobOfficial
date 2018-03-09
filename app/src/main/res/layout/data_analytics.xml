@@ -8,35 +8,53 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="byob.beersnob6.DataAnalyticsActivity"
-    android:background="@color/blue">
+    android:background="@color/green">
 
     <!--style="@style/Widget.AppCompat.Button.Colored"-->
     <Button
         android:id="@+id/button5"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
         android:background="@color/white"
+        android:text="@string/bottle_count"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginRight="11dp"
+        android:layout_marginEnd="11dp" />
+
+
+    <Button
+        android:id="@+id/button8"
         android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
-        android:layout_marginBottom="0dp"
-        android:layout_marginEnd="150dp"
-        android:layout_marginRight="220dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginStart="15dp"
+        android:layout_toEndOf="@+id/space"
+        android:layout_toRightOf="@+id/space"
+        android:background="@color/white"
         android:text="@string/temp" />
-
 
     <Space
         android:layout_width="0dp"
         android:layout_height="0.5dp"
-        android:layout_weight="0.3" >
+        android:layout_weight="0.3"
+        android:id="@+id/space">
     </Space>
 
     <com.jjoe64.graphview.GraphView
         android:layout_width="match_parent"
         android:layout_height="215dip"
-        android:id="@+id/graph" />
+        android:id="@+id/graph"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_above="@+id/button5"
+        android:layout_below="@+id/space"
+        android:layout_toRightOf="@+id/space"
+        android:layout_toEndOf="@+id/space" />
 
-   <!--Commenting out temperature button for now-->
+    <!--Commenting out temperature button for now-->
 
 
 </RelativeLayout>

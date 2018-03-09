@@ -3,9 +3,13 @@ package byob.beersnob6;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
 
@@ -17,6 +21,7 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.gson.Gson;
 import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
@@ -51,6 +56,7 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
     ArrayList<String>  templist;
     ArrayList<DataPoint> dataPoints;
     GraphView graph;
+    GridLabelRenderer render;
     LineGraphSeries<DataPoint> series, series_test;
     DynamoDBMapper dynamoDBMapper;
 
@@ -58,6 +64,11 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
         super.onCreate(savedInstanceState);
         setContentView(R.layout.data_analytics);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+        String title = "Beer Snob Analytics";
+        SpannableString s = new SpannableString(title);
+        s.setSpan(new ForegroundColorSpan(Color.BLACK), 0, title.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        getSupportActionBar().setTitle(s);
 
         AmazonDynamoDBClient dynamoDBClient = new AmazonDynamoDBClient(AWSMobileClient.getInstance().getCredentialsProvider());
         this.dynamoDBMapper = DynamoDBMapper.builder()
@@ -67,6 +78,12 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
 
 
         graph = (GraphView) findViewById(R.id.graph);
+        graph.setTitleColor(Color.WHITE);
+        render = graph.getGridLabelRenderer();
+        render.setGridColor(Color.WHITE);
+        render.setVerticalAxisTitleColor(Color.WHITE);
+        render.setVerticalLabelsColor(Color.WHITE);
+        render.setHorizontalLabelsColor(Color.WHITE);
         series = new LineGraphSeries<>();
 
         // set date label formatter
@@ -82,12 +99,10 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
         // is not necessary
         //graph.getGridLabelRenderer().setHumanRounding(false);
 
-        //readSQLData();
-
 
 
         android.widget.Button Temp;
-        Temp = (android.widget.Button)findViewById(R.id.button5);
+        Temp = (android.widget.Button)findViewById(R.id.button8);
         Temp.setTextSize(20);
         Temp.setOnClickListener(new View.OnClickListener() {
 
@@ -99,11 +114,31 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
 
                 Log.d("Onclick","Im Alive!");
                 graph.removeAllSeries();
+                graph.setTitle("Fridge Temperature Data Analytics");
+                render.setVerticalAxisTitle("Temperature (°F)");
+
                 //https://github.com/kosalgeek/generic_asynctask <--use this for the AsyncRespone not built in Android Studio Library
                 //PostResponseAsyncTask tempqueryTask = new PostResponseAsyncTask(DataAnalyticsActivity.this, DataAnalyticsActivity.this);
                 //tempqueryTask.execute("http://192.168.1.117/tempquery.php");
-                readSQLData();
+                graphTempData();
 
+            }
+
+
+
+        });
+
+        android.widget.Button BottleCount;
+        BottleCount = (android.widget.Button)findViewById(R.id.button5);
+        BottleCount.setTextSize(20);
+        BottleCount.setOnClickListener(new View.OnClickListener() {
+
+
+            @Override
+            public void onClick(View v) {
+                Log.d("Onclick","Im Alive!");
+                graph.removeAllSeries();
+                graphTempData();
             }
 
 
@@ -174,7 +209,7 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
 
     }
 
-    public void readSQLData(){
+    public void graphTempData(){
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -248,6 +283,7 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                     }
                 }
 
+                series.setColor(Color.YELLOW);
                 graph.addSeries(series);
 
 
