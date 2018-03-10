@@ -15,6 +15,7 @@ import android.view.View;
 
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.DynamoDBQueryExpression;
 import com.amazonaws.mobileconnectors.dynamodbv2.dynamodbmapper.PaginatedList;
+import com.amazonaws.models.nosql.BottleCountDO;
 import com.amazonaws.models.nosql.TempDO;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
@@ -22,7 +23,10 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.gson.Gson;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GridLabelRenderer;
+import com.jjoe64.graphview.ValueDependentColor;
 import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
+import com.jjoe64.graphview.helper.StaticLabelsFormatter;
+import com.jjoe64.graphview.series.BarGraphSeries;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 import com.kosalgeek.asynctask.AsyncResponse;
@@ -45,20 +49,24 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.mobile.auth.core.IdentityManager;
 
 /**
- * Activity to show temperature graphed over time.
+ * Activity to show data analytics of the fridge's temeprature and bottle count.
  *
- * Uses temperature data fetched from Amazon Dynamo DB to create the graph.
+ * Uses data fetched from Amazon Dynamo DB to create the graphs.
+ * There are 2 graphs: Fridge Temperature Graph for Today, and Maximum Bottle Count Over the Past 7 Days
  */
 
-public class DataAnalyticsActivity extends AppCompatActivity implements AsyncResponse{
+public class DataAnalyticsActivity extends AppCompatActivity{
     List<String>  allelements;
     ArrayList<Date>  datelist;
-    ArrayList<String>  templist;
+    ArrayList<String>  templist, countlist, daylist;
+    ArrayList<Integer> bottleCountList;
     ArrayList<DataPoint> dataPoints;
     GraphView graph;
     GridLabelRenderer render;
     LineGraphSeries<DataPoint> series, series_test;
+    BarGraphSeries<DataPoint> barSeries;
     DynamoDBMapper dynamoDBMapper;
+
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,7 +92,6 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
         render.setVerticalAxisTitleColor(Color.WHITE);
         render.setVerticalLabelsColor(Color.WHITE);
         render.setHorizontalLabelsColor(Color.WHITE);
-        series = new LineGraphSeries<>();
 
         // set date label formatter
         graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(this, DateFormat.getTimeInstance()));
@@ -100,7 +107,6 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
         //graph.getGridLabelRenderer().setHumanRounding(false);
 
 
-
         android.widget.Button Temp;
         Temp = (android.widget.Button)findViewById(R.id.button8);
         Temp.setTextSize(20);
@@ -109,22 +115,14 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
 
             @Override
             public void onClick(View v) {
-                //Intent i = new Intent(getApplicationContext(), FridgeStatusActivity.class);
-                //startActivity(i);
-
-                Log.d("Onclick","Im Alive!");
                 graph.removeAllSeries();
-                graph.setTitle("Fridge Temperature Data Analytics");
+                graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(DataAnalyticsActivity.this, DateFormat.getTimeInstance()));
+                graph.getGridLabelRenderer().setNumHorizontalLabels(3); // only 4 because of the space
+                graph.setTitle("Fridge Temperature Graph for Today");
                 render.setVerticalAxisTitle("Temperature (°F)");
 
-                //https://github.com/kosalgeek/generic_asynctask <--use this for the AsyncRespone not built in Android Studio Library
-                //PostResponseAsyncTask tempqueryTask = new PostResponseAsyncTask(DataAnalyticsActivity.this, DataAnalyticsActivity.this);
-                //tempqueryTask.execute("http://192.168.1.117/tempquery.php");
                 graphTempData();
-
             }
-
-
 
         });
 
@@ -136,76 +134,16 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
 
             @Override
             public void onClick(View v) {
-                Log.d("Onclick","Im Alive!");
                 graph.removeAllSeries();
-                graphTempData();
+                graph.setTitle("Maximum Bottle Count Over the Past 7 Days");
+                render.setVerticalAxisTitle("Number of Bottles");
+
+                graphBottleWeekData();
             }
 
 
 
         });
-
-    }
-
-    @Override
-    public void processFinish(String output) {
-        //you can get 'output' from here as a string
-        //if the incoming data belongs to temp then do put it into an array
-        SimpleDateFormat formatter;
-
-            String regex = "\\s*\\btemp\\b\\s*";
-            output = output.replaceAll(regex, "");
-            output = output.replaceAll("'", "");
-            allelements = Arrays.asList(output.split("\\s*,\\s*"));
-            templist = new ArrayList<String>();
-            datelist = new ArrayList<Date>();
-            dataPoints = new ArrayList<DataPoint>();
-             series = new LineGraphSeries<>();
-             series_test = new LineGraphSeries<>();
-            for (int i = 0; i < allelements.size(); i++){
-                if(i%2 == 0){
-                    templist.add(allelements.get(i));
-
-
-                }
-                else{
-                    //replace space with 'T' to match premade pattern for the String formatter
-                    String date = allelements.get(i);
-                    date = date.replaceAll(" ", "T");
-                    date = date.substring(0,date.length() - 3);
-                    date = date.concat("-07:00");
-                    //System.out.print(date+",");
-                    //create new date formatter object
-                   formatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-
-                    try {
-                        datelist.add(formatter.parse(date));
-                    }
-                    catch(Exception e) {
-                        System.out.println(e.getMessage());
-                    }
-
-                }
-
-            }
-        Log.d("ProcessFinish","Im Alive!");
-
-
-            for(int i = 0; i < datelist.size(); i++){
-                //create an array of Data Points with dates on the x and temp on the y
-                Log.d("ProcessFinish", "datelist = "+datelist.get(i));
-                try{
-                    dataPoints.add(new DataPoint(datelist.get(i), Double.parseDouble(templist.get(i))));
-                    series.appendData(dataPoints.get(i), true, 220);
-                }
-                catch(Exception ex) {
-                    Log.d("ProcessFinish", "ERROR : " + ex.toString());
-                }
-            }
-
-            System.out.println(templist);
-            System.out.println(datelist);
-            graph.addSeries(series);
 
     }
 
@@ -219,7 +157,7 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                 myTemp.setTime("time");
 
                 /* Get the current date */
-                Calendar cal = Calendar.getInstance(/*TimeZone.getTimeZone("UTC")*/); //Pi records date log in UTC
+                Calendar cal = Calendar.getInstance(/*TimeZone.getTimeZone("UTC")*/);
                 int year = cal.get(Calendar.YEAR);
                 int month = cal.get(Calendar.MONTH) + 1; // because returns int 0 to 11
                 int day = cal.get(Calendar.DAY_OF_MONTH);
@@ -248,8 +186,9 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                 templist = new ArrayList<String>();
                 datelist = new ArrayList<Date>();
                 dataPoints = new ArrayList<DataPoint>();
+                series = new LineGraphSeries<>();
 
-                /* Fill temperature and date lists */
+                /* Fill temperature and date lists using DynamoDB data*/
                 for(int i = 0; i < result.size(); i++){
                     tempItem = result.get(i);
                     String jsonFormOfItem = gson.toJson(tempItem);
@@ -286,8 +225,188 @@ public class DataAnalyticsActivity extends AppCompatActivity implements AsyncRes
                 series.setColor(Color.YELLOW);
                 graph.addSeries(series);
 
+            }
+        }).start();
+    }
+
+    public void graphAllBottleData(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                BottleCountDO hashKey = new BottleCountDO();
+                hashKey.setUserId("0");
+                hashKey.setCount("Count");
+                hashKey.setTime("time");
+
+                DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
+                        .withConsistentRead(false)
+                        .withHashKeyValues(hashKey);
+
+                PaginatedList<BottleCountDO> result = dynamoDBMapper.query(BottleCountDO.class, queryExpression);
+
+                /* Parse output from query */
+                Gson gson = new Gson();
+                StringBuilder stringBuilder = new StringBuilder();
+
+                SimpleDateFormat formatter;
+                BottleCountDO tempItem;
+                String date;
+                countlist = new ArrayList<String>();
+                datelist = new ArrayList<Date>();
+                dataPoints = new ArrayList<DataPoint>();
+                series = new LineGraphSeries<>();
+
+                /* Fill bottle count and date lists */
+                for(int i = 0; i < result.size(); i++){
+                    tempItem = result.get(i);
+                    String jsonFormOfItem = gson.toJson(tempItem);
+                    stringBuilder.append(jsonFormOfItem + "\n\n");
+
+                    formatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+                    date = tempItem.getTime();
+                    date = date.replaceAll(" ", "T");
+                    date = date.substring(0,date.length() - 3);
+                    date = date.concat("-08:00"); //Time Zone PST
+
+                    try {
+                        datelist.add(formatter.parse(date));
+                        countlist.add(tempItem.getCount());
+                    }
+                    catch(Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+
+                    Log.d("ProcessFinish", jsonFormOfItem);
+                }
+
+                /* Insert data points into graph */
+                for(int i = 0; i < datelist.size(); i++){
+                    try{
+                        dataPoints.add(new DataPoint(datelist.get(i), Double.parseDouble(countlist.get(i))));
+                        series.appendData(dataPoints.get(i), true, 220);
+                    }
+                    catch(Exception ex) {
+                        Log.d("ProcessFinish", "ERROR : " + ex.toString());
+                    }
+                }
+
+                series.setColor(Color.YELLOW);
+                graph.addSeries(series);
+
 
             }
         }).start();
+    }
+
+    public void graphBottleWeekData(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // Get the current date string
+                Calendar cal = Calendar.getInstance();
+                cal.add(Calendar.DAY_OF_MONTH, -6);
+                String tempDate = getDate(cal);
+                Log.d("ProcessFinish", tempDate);
+
+                String[] strDays = new String[] { "Sun", "Mon", "Tues", "Wed", "Thurs",
+                        "Fri", "Sat" };
+
+                BottleCountDO bottleCount = new BottleCountDO();
+                bottleCount.setUserId("0");
+                bottleCount.setTime("time");
+                bottleCount.setCount("count");
+
+                PaginatedList<BottleCountDO> results;
+
+                BottleCountDO tempItem;
+                Integer current = 0;
+                Integer prevCount = 0;
+                Integer maxCount = 0;
+                daylist = new ArrayList<String>();
+                bottleCountList = new ArrayList<Integer>();
+                dataPoints = new ArrayList<DataPoint>();
+                barSeries = new BarGraphSeries<>();
+
+                // For each day over the past 7 days, get max bottle count data and day of the week
+                for(int x = 0; x < 7; x++){
+                    Condition rangedKeyCondition = new Condition()
+                            .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
+                            .withAttributeValueList(new AttributeValue().withS(tempDate));
+
+                    DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
+                            .withRangeKeyCondition("time",rangedKeyCondition)
+                            .withConsistentRead(false)
+                            .withHashKeyValues(bottleCount);
+
+                    results = dynamoDBMapper.query(BottleCountDO.class, queryExpression);
+
+                    // Find max number of bottles for the given calendar day
+                    if(results.size() == 0){
+                        maxCount = prevCount;
+                    }
+                    else {
+                        for (int y = 0; y < results.size(); y++) {
+                            tempItem = results.get(y);
+                            current = Integer.parseInt(tempItem.getCount());
+                            if(current > maxCount){
+                                maxCount = current;
+                            }
+                        }
+                        prevCount = maxCount;
+                    }
+
+                    daylist.add(strDays[cal.get(Calendar.DAY_OF_WEEK)-1]);
+                    bottleCountList.add(maxCount);
+
+                    maxCount = 0;
+                    cal.add(Calendar.DAY_OF_MONTH, +1);
+                    tempDate = getDate(cal);
+                }
+
+                // Add series to the graph
+                for(int i = 0; i < daylist.size(); i++){
+                    try{
+                        dataPoints.add(new DataPoint(i, bottleCountList.get(i)));
+                        barSeries.appendData(dataPoints.get(i), true, 220);
+                    }catch(Exception e){
+                        Log.d("ProcessFinish", "ERROR : " + e.toString());
+                    }
+                }
+
+                // Set the x-axis as days of the week from the past 7 days including today
+                StaticLabelsFormatter labels = new StaticLabelsFormatter(graph);
+                String[] days = daylist.toArray(new String[daylist.size()]);
+                Log.d("ProcessFinish", "Days= "+days.toString());
+                labels.setHorizontalLabels(days);
+                graph.getGridLabelRenderer().setNumHorizontalLabels(7); // set to 7 for past 7 days
+                graph.getGridLabelRenderer().setLabelFormatter(labels);
+
+                // styling the colors to alternate yellow, orange
+                barSeries.setValueDependentColor(new ValueDependentColor<DataPoint>() {
+                    @Override
+                    public int get(DataPoint data) {
+                        if(data.getX() % 2 == 0){
+                            return Color.rgb(255, 236, 0); //gold
+                        }
+                        else{
+                            return Color.rgb(255, 158, 0); // orange
+                        }
+                    }
+                });
+                barSeries.setSpacing(30);
+                barSeries.setDrawValuesOnTop(true);
+                barSeries.setValuesOnTopColor(Color.WHITE);
+                graph.addSeries(barSeries);
+            }
+
+        }).start();
+    }
+
+    public String getDate(Calendar cal){
+        int year = cal.get(Calendar.YEAR);
+        int month = cal.get(Calendar.MONTH) + 1; // because returns int 0 to 11
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        String tempDate = String.format("%4d-%02d-%02d", year, month, day);
+        return tempDate;
     }
 }

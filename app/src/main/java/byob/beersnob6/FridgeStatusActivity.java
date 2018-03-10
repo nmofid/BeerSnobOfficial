@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -54,10 +55,12 @@ public class FridgeStatusActivity extends AppCompatActivity {
                 .awsConfiguration(AWSMobileClient.getInstance().getConfiguration())
                 .build();
 
-        // Set up text view string
-        getCurrentBottleCount();
-        getCurrentTemperature();
-        String message = "\nBottle Count: \n\nTemperature:  °F\n\nFridge Contents Image Last Taken: ";
+        // Creates and runs a thread to fetch bottle count and temperature
+        runFetchTasks();
+
+        // Set up text view string message
+        String message = "\nBottle Count: " + currentBottleCount + "\n\nTemperature: " + currentTemp +
+                " °F\n\nFridge Contents Image Last Taken: " + recentImageDate;
 
         TextView report = (TextView)findViewById(R.id.report);
         report.setTextColor(Color.WHITE);
@@ -73,7 +76,7 @@ public class FridgeStatusActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 Log.d("Onclick","Im Alive!");
-                getCurrentBottleCount();
+                runFetchTasks();
                 String message = "\nBottle Count: " + currentBottleCount + "\n\nTemperature: " + currentTemp +
                         " °F\n\nFridge Contents Image Last Taken: " + recentImageDate;
                 TextView report = (TextView)findViewById(R.id.report);
@@ -86,162 +89,167 @@ public class FridgeStatusActivity extends AppCompatActivity {
         });
     }
 
-    public void getCurrentBottleCount(){
-
-        new Thread(new Runnable() {
+    public void runFetchTasks(){
+        Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
-
-                // Get the current date string
-                Calendar cal = Calendar.getInstance();
-                String tempDate = getDate(cal);
-                Log.d("ProcessFinish", tempDate);
-
-                BottleCountDO bottleCount = new BottleCountDO();
-                bottleCount.setUserId("0");
-                bottleCount.setTime("time");
-                bottleCount.setCount("count");
-
-                PaginatedList<BottleCountDO> results;
-
-                // Get the most recent list of bottle counts, based on day of the month.
-                do{
-                    /* Set up query to dynamoDB, output all temperatures from day of query */
-                    Condition rangedKeyCondition = new Condition()
-                            .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
-                            .withAttributeValueList(new AttributeValue().withS(tempDate));
-
-                    DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
-                            .withRangeKeyCondition("time",rangedKeyCondition)
-                            .withConsistentRead(false)
-                            .withHashKeyValues(bottleCount);
-
-                    results = dynamoDBMapper.query(BottleCountDO.class, queryExpression);
-
-                    cal.add(Calendar.DAY_OF_MONTH, -1);
-                    tempDate = getDate(cal);
-                    Log.d("ProcessFinish", tempDate);
-                } while(results.size() == 0);
-
-                BottleCountDO tempItem;
-                SimpleDateFormat formatter;
-                String date, count;
-                Date temp, mostRecent;
-                mostRecent = null;
-                String mostRecentBottleCount = "0";
-
-                // Find the most recent bottle count
-                for(int i = 0; i < results.size(); i++){
-                    tempItem = results.get(i);
-                    formatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-                    count = tempItem.getCount();
-                    date = tempItem.getTime();
-                    date = date.replaceAll(" ", "T");
-                    date = date.substring(0,date.length() - 3);
-                    date = date.concat("-08:00"); //Time Zone PST
-                    try {
-                        if (i == 0) {
-                            mostRecent = formatter.parse(date);
-                            mostRecentBottleCount = count;
-                            Log.d("ProcessFinish", "First update to bottle count: "+mostRecentBottleCount+" DATE: "+mostRecent.toString());
-                        }
-                        else{
-                            temp = formatter.parse(date);
-                            if(/*mostRecent != null && */temp.after(mostRecent)){
-                                mostRecent = temp;
-                                mostRecentBottleCount = count;
-                            }
-                            Log.d("ProcessFinish", "Most recent update to bottle count: "+mostRecentBottleCount+" DATE: "+mostRecent.toString());
-                        }
-                    }catch(Exception e){
-                        System.out.println(e.getMessage());
-                    }
-                }
-
-                currentBottleCount = mostRecentBottleCount;
-                recentImageDate = mostRecent.toString();
-                Log.d("ProcessFinish", "BOTTLE COUNT ="+mostRecentBottleCount);
-
+                getCurrentBottleCount();
+                getCurrentTemperature();
             }
-        }).start();
+        });
+        t.start();
+        try {
+            t.join();
+        }
+        catch(Exception e){
+            Log.e("ProcessFinish", "ERROR: "+e);
+        }
+    }
+
+    // Fetches the most recent bottle count from Amazon Dynamo DB
+    // Must be run in a thread separate from main thread
+    public void getCurrentBottleCount(){
+        // Get the current date string
+        Calendar cal = Calendar.getInstance();
+        String tempDate = getDate(cal);
+        Log.d("ProcessFinish", tempDate);
+
+        BottleCountDO bottleCount = new BottleCountDO();
+        bottleCount.setUserId("0");
+        bottleCount.setTime("time");
+        bottleCount.setCount("count");
+
+        PaginatedList<BottleCountDO> results;
+
+        // Get the most recent list of bottle counts, based on day of the month.
+        do{
+            /* Set up query to dynamoDB, output all temperatures from day of query */
+            Condition rangedKeyCondition = new Condition()
+                    .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
+                    .withAttributeValueList(new AttributeValue().withS(tempDate));
+
+            DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
+                    .withRangeKeyCondition("time",rangedKeyCondition)
+                    .withConsistentRead(false)
+                    .withHashKeyValues(bottleCount);
+
+            results = dynamoDBMapper.query(BottleCountDO.class, queryExpression);
+
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+            tempDate = getDate(cal);
+            Log.d("ProcessFinish", tempDate);
+        } while(results.size() == 0);
+
+        BottleCountDO tempItem;
+        SimpleDateFormat formatter;
+        String date, count;
+        Date temp, mostRecent;
+        mostRecent = null;
+        String mostRecentBottleCount = "0";
+
+        // Find the most recent bottle count
+        for(int i = 0; i < results.size(); i++){
+            tempItem = results.get(i);
+            formatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+            count = tempItem.getCount();
+            date = tempItem.getTime();
+            date = date.replaceAll(" ", "T");
+            date = date.substring(0,date.length() - 3);
+            date = date.concat("-08:00"); //Time Zone PST
+            try {
+                if (i == 0) {
+                    mostRecent = formatter.parse(date);
+                    mostRecentBottleCount = count;
+                    Log.d("ProcessFinish", "First update to bottle count: "+mostRecentBottleCount+" DATE: "+mostRecent.toString());
+                }
+                else{
+                    temp = formatter.parse(date);
+                    if(/*mostRecent != null && */temp.after(mostRecent)){
+                        mostRecent = temp;
+                        mostRecentBottleCount = count;
+                    }
+                    Log.d("ProcessFinish", "Most recent update to bottle count: "+mostRecentBottleCount+" DATE: "+mostRecent.toString());
+                }
+            }catch(Exception e){
+                System.out.println(e.getMessage());
+            }
+        }
+
+        currentBottleCount = mostRecentBottleCount;
+        recentImageDate = mostRecent.toString();
+        Log.d("ProcessFinish", "BOTTLE COUNT ="+mostRecentBottleCount);
+
     }
 
     public void getCurrentTemperature(){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
+        // Get the current date string
+        Calendar cal = Calendar.getInstance();
+        String tempDate = getDate(cal);
+        Log.d("ProcessFinish", tempDate);
 
-                // Get the current date string
-                Calendar cal = Calendar.getInstance();
-                String tempDate = getDate(cal);
-                Log.d("ProcessFinish", tempDate);
+        TempDO myTemp = new TempDO();
+        myTemp.setUserId("0");
+        myTemp.setTime("time");
+        myTemp.setTemp("temp");
 
-                TempDO myTemp = new TempDO();
-                myTemp.setUserId("0");
-                myTemp.setTime("time");
-                myTemp.setTemp("temp");
+        PaginatedList<TempDO> results;
 
-                PaginatedList<TempDO> results;
+        // Get the most recent list of bottle counts, based on day of the month.
+        do{
+            /* Set up query to dynamoDB, output all temperatures from day of query */
+            Condition rangedKeyCondition = new Condition()
+                    .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
+                    .withAttributeValueList(new AttributeValue().withS(tempDate));
 
-                // Get the most recent list of bottle counts, based on day of the month.
-                do{
-                    /* Set up query to dynamoDB, output all temperatures from day of query */
-                    Condition rangedKeyCondition = new Condition()
-                            .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
-                            .withAttributeValueList(new AttributeValue().withS(tempDate));
+            DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
+                    .withRangeKeyCondition("time",rangedKeyCondition)
+                    .withConsistentRead(false)
+                    .withHashKeyValues(myTemp);
 
-                    DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
-                            .withRangeKeyCondition("time",rangedKeyCondition)
-                            .withConsistentRead(false)
-                            .withHashKeyValues(myTemp);
+            results = dynamoDBMapper.query(TempDO.class, queryExpression);
 
-                    results = dynamoDBMapper.query(TempDO.class, queryExpression);
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+            tempDate = getDate(cal);
+            Log.d("ProcessFinish", tempDate);
+        } while(results.size() == 0);
 
-                    cal.add(Calendar.DAY_OF_MONTH, -1);
-                    tempDate = getDate(cal);
-                    Log.d("ProcessFinish", tempDate);
-                } while(results.size() == 0);
+        TempDO tempItem;
+        SimpleDateFormat formatter;
+        String date, itemTemp;
+        Date temp, mostRecent;
+        mostRecent = null;
+        String mostRecentTemp = "0";
 
-                TempDO tempItem;
-                SimpleDateFormat formatter;
-                String date, itemTemp;
-                Date temp, mostRecent;
-                mostRecent = null;
-                String mostRecentTemp = "0";
-
-                // Find the most recent bottle count
-                for(int i = 0; i < results.size(); i++){
-                    tempItem = results.get(i);
-                    formatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-                    itemTemp = tempItem.getTemp();
-                    date = tempItem.getTime();
-                    date = date.replaceAll(" ", "T");
-                    date = date.substring(0,date.length() - 3);
-                    date = date.concat("-08:00"); //Time Zone PST
-                    try {
-                        if (i == 0) {
-                            mostRecent = formatter.parse(date);
-                            mostRecentTemp = itemTemp;
-                            Log.d("ProcessFinish", "First update to TEMP: "+mostRecentTemp+" DATE: "+mostRecent.toString());
-                        }
-                        else{
-                            temp = formatter.parse(date);
-                            if(mostRecent != null && temp.after(mostRecent)){
-                                mostRecent = temp;
-                                mostRecentTemp = itemTemp;
-                            }
-                            Log.d("ProcessFinish", "Most recent update to TEMP: "+mostRecentTemp+" DATE: "+mostRecent.toString());
-                        }
-                    }catch(Exception e){
-                        System.out.println(e.getMessage());
-                    }
+        // Find the most recent bottle count
+        for(int i = 0; i < results.size(); i++){
+            tempItem = results.get(i);
+            formatter = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+            itemTemp = tempItem.getTemp();
+            date = tempItem.getTime();
+            date = date.replaceAll(" ", "T");
+            date = date.substring(0,date.length() - 3);
+            date = date.concat("-08:00"); //Time Zone PST
+            try {
+                if (i == 0) {
+                    mostRecent = formatter.parse(date);
+                    mostRecentTemp = itemTemp;
+                    Log.d("ProcessFinish", "First update to TEMP: "+mostRecentTemp+" DATE: "+mostRecent.toString());
                 }
-
-                currentTemp = mostRecentTemp;
-                Log.d("ProcessFinish", "TEMPERATURE ="+mostRecentTemp);
-
+                else{
+                    temp = formatter.parse(date);
+                    if(mostRecent != null && temp.after(mostRecent)){
+                        mostRecent = temp;
+                        mostRecentTemp = itemTemp;
+                    }
+                    Log.d("ProcessFinish", "Most recent update to TEMP: "+mostRecentTemp+" DATE: "+mostRecent.toString());
+                }
+            }catch(Exception e){
+                System.out.println(e.getMessage());
             }
-        }).start();
+        }
+
+        currentTemp = mostRecentTemp;
+        Log.d("ProcessFinish", "TEMPERATURE ="+mostRecentTemp);
 
     }
 
