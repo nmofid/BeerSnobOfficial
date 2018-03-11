@@ -56,14 +56,13 @@ import com.amazonaws.mobile.auth.core.IdentityManager;
  */
 
 public class DataAnalyticsActivity extends AppCompatActivity{
-    List<String>  allelements;
     ArrayList<Date>  datelist;
     ArrayList<String>  templist, countlist, daylist;
     ArrayList<Integer> bottleCountList;
     ArrayList<DataPoint> dataPoints;
     GraphView graph;
     GridLabelRenderer render;
-    LineGraphSeries<DataPoint> series, series_test;
+    LineGraphSeries<DataPoint> series;
     BarGraphSeries<DataPoint> barSeries;
     DynamoDBMapper dynamoDBMapper;
 
@@ -318,14 +317,54 @@ public class DataAnalyticsActivity extends AppCompatActivity{
 
                 PaginatedList<BottleCountDO> results;
 
+                int goBack = 0;
+                Integer prevCount = 0;
                 BottleCountDO tempItem;
                 Integer current = 0;
-                Integer prevCount = 0;
                 Integer maxCount = 0;
                 daylist = new ArrayList<String>();
                 bottleCountList = new ArrayList<Integer>();
                 dataPoints = new ArrayList<DataPoint>();
                 barSeries = new BarGraphSeries<>();
+
+                // Find the first prevCount of bottles (aka before the point 7 days previous from today)
+                do{
+                    cal.add(Calendar.DAY_OF_MONTH, -1);
+                    tempDate = getDate(cal);
+                    goBack++;
+
+                    Condition rangedKeyCondition = new Condition()
+                            .withComparisonOperator(ComparisonOperator.BEGINS_WITH)
+                            .withAttributeValueList(new AttributeValue().withS(tempDate));
+
+                    DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression()
+                            .withRangeKeyCondition("time",rangedKeyCondition)
+                            .withConsistentRead(false)
+                            .withHashKeyValues(bottleCount);
+
+                    results = dynamoDBMapper.query(BottleCountDO.class, queryExpression);
+
+                    if(results.size() != 0){
+                        for (int y = 0; y < results.size(); y++) {
+                            tempItem = results.get(y);
+                            current = Integer.parseInt(tempItem.getCount());
+                            if(current > maxCount){
+                                maxCount = current;
+                            }
+                        }
+                        prevCount = maxCount;
+                        maxCount = 0;
+                        break;
+                    }
+
+                } while(goBack >= 3); // only check 3 days prior
+
+                // Set the calendar back to 7 days prior to today
+                cal.add(Calendar.DAY_OF_MONTH, goBack);
+                tempDate = getDate(cal);
+
+                Log.d("ProcessFinsih", "PrevCount = "+prevCount);
+
 
                 // For each day over the past 7 days, get max bottle count data and day of the week
                 for(int x = 0; x < 7; x++){
